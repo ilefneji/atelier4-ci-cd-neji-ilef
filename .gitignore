@@ -1,0 +1,9 @@
+# Jenkins data (must never be committed)
+ci-cd-config/jenkins_home/
+
+# Docker artifacts
+*.log
+
+# Build outputs (optional)
+*.o
+*.out
