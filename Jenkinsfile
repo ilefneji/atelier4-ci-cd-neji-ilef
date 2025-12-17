@@ -64,6 +64,28 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
+stage('Docker Push to Registry') {
+    steps {
+        script {
+            def imageTag = "build-${env.BUILD_NUMBER}"
+
+            withCredentials([usernamePassword(
+                credentialsId: 'docker-hub-credentials',
+                passwordVariable: 'DOCKER_PASSWORD',
+                usernameVariable: 'DOCKER_USER'
+            )]) {
+
+                sh """
+                  echo "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USER} --password-stdin ${DOCKER_REGISTRY}
+                  docker push ${IMAGE_SERVER}:${imageTag}
+                  docker push ${IMAGE_CLIENT}:${imageTag}
+                  docker push ${IMAGE_SERVER}:latest
+                  docker push ${IMAGE_CLIENT}:latest
+                """
+            }
+        }
+    }
+}
                 // Met à jour les fichiers de manifeste avec le bon tag d'image
                 sh "sed -i 's|image: .*monapp-serveur:.*|image: ${IMAGE_SERVER}:${env.BUILD_NUMBER}|g' ci-cd-config/k8s-serveur-deployment.yaml"
                 sh "sed -i 's|image: .*monapp-client:.*|image: ${IMAGE_CLIENT}:${env.BUILD_NUMBER}|g' ci-cd-config/k8s-client-deployment.yaml"
