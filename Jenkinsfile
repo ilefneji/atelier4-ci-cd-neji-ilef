@@ -1,5 +1,4 @@
-Started by user nejiilef
-Obtained Jenkinsfile from git https://github.com/ilefneji/atelier4-ci-cd-neji-ilef.git
+started by user nejiilef
 org.codehaus.groovy.control.MultipleCompilationErrorsException: startup failed:
 WorkflowScript: 52: Expected a step @ line 52, column 21.
                        def imageTag = "build-${env.BUILD_NUMBER}"
