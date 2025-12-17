@@ -1,96 +1,68 @@
+Started by user nejiilef
+Obtained Jenkinsfile from git https://github.com/ilefneji/atelier4-ci-cd-neji-ilef.git
+org.codehaus.groovy.control.MultipleCompilationErrorsException: startup failed:
+WorkflowScript: 52: Expected a step @ line 52, column 21.
+                       def imageTag = "build-${env.BUILD_NUMBER}"
+                       ^
+
 pipeline {
     agent any
-    
-    // Définir les variables globales
+
     environment {
         DOCKER_REGISTRY = 'docker.io'
-        DOCKER_USERNAME = 'monuser' // Votre nom d'utilisateur Docker Hub
-        REPO_NAME = 'monapp'
+        DOCKER_USERNAME = 'ilefneji'
+        REPO_NAME = 'atelier4-ci-cd-neji-ilef'
         IMAGE_SERVER = "${DOCKER_USERNAME}/${REPO_NAME}-serveur"
         IMAGE_CLIENT = "${DOCKER_USERNAME}/${REPO_NAME}-client"
     }
 
     stages {
+
         stage('Checkout Code') {
             steps {
-                // Récupère le code depuis le SCM (défini dans la configuration du job Jenkins)
-                checkout scm 
+                checkout scm
             }
         }
-        
-        stage('Build & Test') {
-            steps {
-                script {
-                    // Les étapes de compilation GCC sont maintenant dans le Dockerfile (Stage 1)
-                    echo "Compilation des binaires incluse dans l'étape Docker Build Multi-Stage."
-                }
-            }
-        }
-        
+
         stage('Docker Build Images') {
             steps {
                 script {
                     def imageTag = "build-${env.BUILD_NUMBER}"
-                    
-                    // 1. Build du Serveur
+
                     sh "docker build -t ${IMAGE_SERVER}:${imageTag} ./serveur"
                     sh "docker tag ${IMAGE_SERVER}:${imageTag} ${IMAGE_SERVER}:latest"
-                    
-                    // 2. Build du Client
+
                     sh "docker build -t ${IMAGE_CLIENT}:${imageTag} ./client"
                     sh "docker tag ${IMAGE_CLIENT}:${imageTag} ${IMAGE_CLIENT}:latest"
                 }
             }
         }
-        
+
         stage('Docker Push to Registry') {
             steps {
-                // IMPORTANT : Nécessite un Credential ID Jenkins pour votre Docker Hub (voir 5.1)
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USER')]) {
-                    sh "echo \"${DOCKER_PASSWORD}\" | docker login -u ${DOCKER_USER} --password-stdin ${DOCKER_REGISTRY}"
-
+                script {
                     def imageTag = "build-${env.BUILD_NUMBER}"
 
-                    // Push les tags
-                    sh "docker push ${IMAGE_SERVER}:${imageTag}"
-                    sh "docker push ${IMAGE_CLIENT}:${imageTag}"
-                    
-                    // Push les tags latest
-                    sh "docker push ${IMAGE_SERVER}:latest"
-                    sh "docker push ${IMAGE_CLIENT}:latest"
+                    withCredentials([usernamePassword(
+                        credentialsId: 'docker-hub-credentials',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASSWORD'
+                    )]) {
+
+                        sh """
+                          echo "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USER} --password-stdin ${DOCKER_REGISTRY}
+                          docker push ${IMAGE_SERVER}:${imageTag}
+                          docker push ${IMAGE_CLIENT}:${imageTag}
+                          docker push ${IMAGE_SERVER}:latest
+                          docker push ${IMAGE_CLIENT}:latest
+                        """
+                    }
                 }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-stage('Docker Push to Registry') {
-    steps {
-        script {
-            def imageTag = "build-${env.BUILD_NUMBER}"
-
-            withCredentials([usernamePassword(
-                credentialsId: 'docker-hub-credentials',
-                passwordVariable: 'DOCKER_PASSWORD',
-                usernameVariable: 'DOCKER_USER'
-            )]) {
-
-                sh """
-                  echo "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USER} --password-stdin ${DOCKER_REGISTRY}
-                  docker push ${IMAGE_SERVER}:${imageTag}
-                  docker push ${IMAGE_CLIENT}:${imageTag}
-                  docker push ${IMAGE_SERVER}:latest
-                  docker push ${IMAGE_CLIENT}:latest
-                """
-            }
-        }
-    }
-}
-                // Met à jour les fichiers de manifeste avec le bon tag d'image
-                sh "sed -i 's|image: .*monapp-serveur:.*|image: ${IMAGE_SERVER}:${env.BUILD_NUMBER}|g' ci-cd-config/k8s-serveur-deployment.yaml"
-                sh "sed -i 's|image: .*monapp-client:.*|image: ${IMAGE_CLIENT}:${env.BUILD_NUMBER}|g' ci-cd-config/k8s-client-deployment.yaml"
-                
-                // Applique les manifestes au cluster Minikube
                 sh "kubectl apply -f ci-cd-config/k8s-serveur-deployment.yaml"
                 sh "kubectl apply -f ci-cd-config/k8s-client-deployment.yaml"
             }
