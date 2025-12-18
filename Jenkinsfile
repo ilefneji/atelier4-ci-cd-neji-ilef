@@ -36,9 +36,9 @@ pipeline {
                         passwordVariable: 'DOCKER_PASSWORD'
                     )]) {
                         sh """
-                          echo "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USER} --password-stdin ${DOCKER_REGISTRY}
-                          docker push ${IMAGE_SERVER}:${imageTag}
-                          docker push ${IMAGE_CLIENT}:${imageTag}
+                          echo "\${DOCKER_PASSWORD}" | docker login -u \${DOCKER_USER} --password-stdin ${DOCKER_REGISTRY}
+                          docker push ${IMAGE_SERVER}:\${imageTag}
+                          docker push ${IMAGE_CLIENT}:\${imageTag}
                           docker push ${IMAGE_SERVER}:latest
                           docker push ${IMAGE_CLIENT}:latest
                         """
@@ -49,6 +49,9 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
+                sh "pwd"
+                sh "ls -l"
+                sh "ls -l ci-cd-config"
                 sh "kubectl apply -f ci-cd-config/k8s-serveur-deployment.yaml"
                 sh "kubectl apply -f ci-cd-config/k8s-client-deployment.yaml"
             }
