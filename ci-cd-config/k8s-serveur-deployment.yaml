@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: serveur
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: serveur
+  template:
+    metadata:
+      labels:
+        app: serveur
+    spec:
+      containers:
+        - name: serveur
+          image: ilefneji/atelier4-ci-cd-neji-ilef-serveur:latest
+          ports:
+            - containerPort: 8080
